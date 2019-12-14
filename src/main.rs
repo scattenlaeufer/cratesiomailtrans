@@ -18,9 +18,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 .help("Path to a mail to be translated"),
         )
         .get_matches();
-    let file_name = matches.value_of("PATH").unwrap();
-    let data = read_to_string(file_name)?;
-    let json = Json::from_str(&data)?;
+    let json = Json::from_str(&read_to_string(matches.value_of("PATH").unwrap())?)?;
     let message_json = json
         .find_path(&["message"])
         .expect("No Message in File found!");
