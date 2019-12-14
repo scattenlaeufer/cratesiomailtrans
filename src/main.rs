@@ -5,10 +5,10 @@ extern crate rustc_serialize;
 
 use clap::{App, Arg};
 use rustc_serialize::json::Json;
-use std::fs::File;
-use std::io::Read;
+use std::error::Error;
+use std::fs::read_to_string;
 
-fn main() {
+fn main() -> Result<(), Box<dyn Error>> {
     let matches = App::new("crateiomailtrans")
         .version("0.1.0")
         .arg(
@@ -19,23 +19,11 @@ fn main() {
         )
         .get_matches();
     let file_name = matches.value_of("PATH").unwrap();
-    let mut file = match File::open(file_name) {
-        Ok(f) => f,
-        Err(e) => panic!("{}", e),
-    };
-    let mut data = String::new();
-    match file.read_to_string(&mut data) {
-        Ok(_) => (),
-        Err(e) => panic!("{}", e),
-    };
-    let json = match Json::from_str(&data) {
-        Ok(j) => j,
-        Err(e) => panic!("{}", e),
-    };
-    let message_json = match json.find_path(&["message"]) {
-        Some(m) => m,
-        None => panic!("No message in file found!"),
-    };
+    let data = read_to_string(file_name)?;
+    let json = Json::from_str(&data)?;
+    let message_json = json
+        .find_path(&["message"])
+        .expect("No Message in File found!");
     let message_array = if let Json::Array(a) = message_json {
         a
     } else {
@@ -47,9 +35,7 @@ fn main() {
             message_vec.push(*b as u8)
         };
     }
-    let message_str = match std::str::from_utf8(&message_vec) {
-        Ok(s) => s,
-        Err(e) => panic!("Invalid UTF-8 sequence: {}", e),
-    };
+    let message_str = std::str::from_utf8(&message_vec)?;
     println!("{}", message_str);
+    Ok(())
 }
